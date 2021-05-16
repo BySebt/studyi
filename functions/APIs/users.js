@@ -5,7 +5,8 @@ const firebase = require("firebase");
 
 firebase.initializeApp(config);
 
-const {validateLoginData, validateSignUpData} = require("../util/validators");
+// eslint-disable-next-line max-len
+// const {validateLoginData, validateSignUpData} = require("../util/validators");
 
 // Login
 exports.loginUser = (request, response) => {
@@ -14,8 +15,8 @@ exports.loginUser = (request, response) => {
     password: request.body.password,
   };
 
-  const {valid, errors} = validateLoginData(user);
-  if (!valid) return response.status(400).json(errors);
+  // const {valid, errors} = validateLoginData(user);
+  // if (!valid) return response.status(400).json(errors);
 
   firebase
       .auth()
@@ -30,7 +31,7 @@ exports.loginUser = (request, response) => {
         console.error(error);
         return response.status(403).json(
             {
-              general: "wrong credentials, please try again",
+              error: "WRONG_CREDENTIALS",
             }
         );
       });
@@ -39,28 +40,20 @@ exports.loginUser = (request, response) => {
 // Sign up
 exports.signUpUser = (request, response) => {
   const newUser = {
-    firstName: request.body.firstName,
-    lastName: request.body.lastName,
+    name: request.body.name,
     email: request.body.email,
-    phoneNumber: request.body.phoneNumber,
-    country: request.body.country,
     password: request.body.password,
-    confirmPassword: request.body.confirmPassword,
-    username: request.body.username,
   };
 
-  const {valid, errors} = validateSignUpData(newUser);
+  // const {valid, errors} = validateSignUpData(newUser);
 
-  if (!valid) return response.status(400).json(errors);
+  // if (!valid) return response.status(400).json(errors);
 
   let token; let userId;
-  db
-      .doc(`/users/${newUser.username}`)
-      .get()
+  db.doc(`/users/${newUser.email}`).get()
       .then((doc) => {
         if (doc.exists) {
-          // eslint-disable-next-line max-len
-          return response.status(400).json({username: "this username is already taken"});
+          return response.status(400).json({error: "EMAIL_TAKEN"});
         } else {
           return firebase
               .auth()
@@ -76,19 +69,14 @@ exports.signUpUser = (request, response) => {
       })
       .then((idtoken) => {
         token = idtoken;
+        const currentDate = new Date();
         const userCredentials = {
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          username: newUser.username,
-          phoneNumber: newUser.phoneNumber,
-          country: newUser.country,
+          name: newUser.name,
           email: newUser.email,
-          createdAt: new Date().toISOString(),
+          signup_date: currentDate.getTime(),
           userId,
         };
-        return db
-            .doc(`/users/${newUser.username}`)
-            .set(userCredentials);
+        return db.doc(`/users/${userId}`).set(userCredentials);
       })
       .then(()=>{
         return response.status(201).json({token});
@@ -96,10 +84,9 @@ exports.signUpUser = (request, response) => {
       .catch((err) => {
         console.error(err);
         if (err.code === "auth/email-already-in-use") {
-          return response.status(400).json({email: "Email already in use"});
+          return response.status(400).json({error: "EMAIL_TAKEN"});
         } else {
-          // eslint-disable-next-line max-len
-          return response.status(500).json({general: "Something went wrong, please try again"});
+          return response.status(500).json({error: "UNKNOWN_ERROR"});
         }
       });
 };

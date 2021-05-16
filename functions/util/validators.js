@@ -5,8 +5,8 @@ const isEmpty = (string) => {
 
 exports.validateLoginData = (data) => {
   const errors = {};
-  if (isEmpty(data.email)) errors.email = "Must not be empty";
-  if (isEmpty(data.password)) errors.password = "Must not be  empty";
+  if (isEmpty(data.email)) errors.email = "Must not be empty.";
+  if (isEmpty(data.password)) errors.password = "Must not be empty.";
   return {
     errors,
     valid: Object.keys(errors).length === 0,
@@ -14,8 +14,7 @@ exports.validateLoginData = (data) => {
 };
 
 const isEmail = (email) => {
-  // eslint-disable-next-line max-len
-  const emailRegEx = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  const emailRegEx = /\S+@\S+\.\S+/;
   return !!email.match(emailRegEx);
 };
 
@@ -23,20 +22,20 @@ exports.validateSignUpData = (data) => {
   const errors = {};
 
   if (isEmpty(data.email)) {
-    errors.email = "Must not be empty";
+    errors.email = "Must not be empty.";
   } else if (!isEmail(data.email)) {
-    errors.email = "Must be valid email address";
+    errors.email = "Must be valid email address.";
   }
 
-  if (isEmpty(data.firstName)) errors.firstName = "Must not be empty";
-  if (isEmpty(data.lastName)) errors.lastName = "Must not be empty";
-  if (isEmpty(data.phoneNumber)) errors.phoneNumber = "Must not be empty";
-  if (isEmpty(data.country)) errors.country = "Must not be empty";
+  if (isEmpty(data.firstName)) errors.firstName = "Must not be empty.";
+  if (isEmpty(data.lastName)) errors.lastName = "Must not be empty.";
+  if (isEmpty(data.phoneNumber)) errors.phoneNumber = "Must not be empty.";
+  if (isEmpty(data.country)) errors.country = "Must not be empty.";
 
-  if (isEmpty(data.password)) errors.password = "Must not be empty";
+  if (isEmpty(data.password)) errors.password = "Must not be empty.";
   // eslint-disable-next-line max-len
-  if (data.password !== data.confirmPassword) errors.confirmPassword = "Passowrds must be the same";
-  if (isEmpty(data.username)) errors.username = "Must not be empty";
+  if (data.password !== data.confirmPassword) errors.confirmPassword = "Passowrds must be the same.";
+  if (isEmpty(data.username)) errors.username = "Must not be empty.";
 
   return {
     errors,

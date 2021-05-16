@@ -21,7 +21,6 @@
   },
   "main": "index.js",
   "dependencies": {
-    "@material-ui/icons": "^4.11.2",
     "busboy": "^0.3.1",
     "express": "^4.17.1",
     "firebase": "^8.3.1",

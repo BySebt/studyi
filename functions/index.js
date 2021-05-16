@@ -36,4 +36,4 @@ app.post("/user", auth, updateUserDetails);
 app.get("/user", auth, getUserDetail);
 
 // eslint-disable-next-line max-len
-exports.api = functions.region("australia-southeast1").runWith({timeoutSeconds: 15, memory: "512MB"}).https.onRequest(app);
+exports.api = functions.region("australia-southeast1").runWith({timeoutSeconds: 15, memory: "128MB"}).https.onRequest(app);

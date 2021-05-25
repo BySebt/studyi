@@ -3,20 +3,22 @@
 const {db} = require("../util/admin");
 
 exports.getAllTodos = (request, response, functions) => {
+  console.log(`/users/${request.user.userId}/tasks`);
   db
-
-      .collection("todos")
-      .where("username", "==", request.user.username)
-      .orderBy("createdAt", "desc")
+      .collection(`/users/${request.user.uid}/tasks`)
+      .orderBy("date_created", "desc")
       .get()
       .then((data) => {
         const todos = [];
         data.forEach((doc) => {
           todos.push({
             todoId: doc.id,
-            title: doc.data().title,
-            body: doc.data().body,
-            createdAt: doc.data().createdAt,
+            name: doc.data().name,
+            length_seconds: doc.data().length_seconds,
+            description: doc.data().description,
+            date_created: doc.data().date_created,
+            next_due_date: doc.data().next_due_date,
+            status: doc.data().status,
           });
         });
         return response.json(todos);
@@ -28,47 +30,29 @@ exports.getAllTodos = (request, response, functions) => {
 };
 
 exports.postOneTodo = (request, response, functions) => {
-  if (request.body.body.trim() === "") {
-    return response.status(400).json({body: "Must not be empty"});
-  }
-
-  if (request.body.title.trim() === "") {
-    return response.status(400).json({title: "Must not be empty"});
-  }
-
   const newTodoItem = {
-    title: request.body.title,
-    body: request.body.body,
-    username: request.user.username,
-    createdAt: new Date().toISOString(),
+    name: request.body.name,
+    description: request.body.description,
+    length_seconds: request.body.length_seconds,
+    next_due_date: request.body.next_due_date,
+    date_created: new Date().toISOString(),
   };
   db
-      .collection("todos")
+      .collection(`/users/${request.user.userId}/tasks`)
       .add(newTodoItem)
-      .then((doc)=>{
-        const responseTodoItem = newTodoItem;
-        responseTodoItem.id = doc.id;
-        return response.json(responseTodoItem);
-      })
       .catch((err) => {
-        response.status(500).json({error: "Something went wrong"});
+        response.status(500).json({error: "Something went wrong."});
         console.error(err);
       });
 };
 
 exports.getOneTodo = (request, response) => {
   db
-      .doc(`/todos/${request.params.todoId}`)
+      .doc(`/users/${request.user.userId}/tasks/${request.params.todoId}`)
       .get()
       .then((doc) => {
         if (!doc.exists) {
-          return response.status(404).json(
-              {
-                error: "Todo not found",
-              });
-        }
-        if (doc.data().username !== request.user.username) {
-          return response.status(403).json({error: "UnAuthorized"});
+          return response.status(404).json({error: "Task not found."});
         }
         const TodoData = doc.data();
         TodoData.todoId = doc.id;
@@ -81,20 +65,15 @@ exports.getOneTodo = (request, response) => {
 };
 
 exports.deleteTodo = (request, response, functions) => {
-  const document = db.doc(`/todos/${request.params.todoId}`);
+  // eslint-disable-next-line max-len
+  const document = db.doc(`/users/${request.user.userId}/tasks/${request.params.todoId}`);
   document
       .get()
       .then((doc) => {
         if (!doc.exists) {
-          return response.status(404).json({error: "Todo not found"});
-        }
-        if (doc.data().username !== request.user.username) {
-          return response.status(403).json({error: "UnAuthorized"});
+          return response.status(404).json({error: "Task not found."});
         }
         return document.delete();
-      })
-      .then(() => {
-        response.json({message: "Delete successfull"});
       })
       .catch((err) => {
         console.error(err);

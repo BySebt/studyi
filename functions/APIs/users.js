@@ -65,7 +65,12 @@ exports.signUpUser = (request, response) => {
       })
       .then((data) => {
         userId = data.user.uid;
-        return data.user.getIdToken();
+        const userData = [];
+        userData.push({
+          token: data.user.getIdToken(),
+          id: data.user.uid,
+        });
+        return userData;
       })
       .then((idtoken) => {
         token = idtoken;

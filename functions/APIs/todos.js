@@ -1,9 +1,6 @@
-// todos.js
-
 const {db} = require("../util/admin");
 
 exports.getAllTodos = (request, response, functions) => {
-  console.log(`/users/${request.user.userId}/tasks`);
   db
       .collection(`/users/${request.user.uid}/tasks`)
       .orderBy("date_created", "desc")
@@ -33,13 +30,19 @@ exports.postOneTodo = (request, response, functions) => {
   const newTodoItem = {
     name: request.body.name,
     description: request.body.description,
-    length_seconds: request.body.length_seconds,
+    time_required: request.body.time_required,
     next_due_date: request.body.next_due_date,
-    date_created: new Date().toISOString(),
+    date_created: request.body.date_created,
+    status: request.body.status,
   };
   db
-      .collection(`/users/${request.user.userId}/tasks`)
+      .collection(`/users/${request.user.uid}/tasks`)
       .add(newTodoItem)
+      .then((doc)=>{
+        const responseTodoItem = newTodoItem;
+        responseTodoItem.id = doc.id;
+        return response.json(responseTodoItem);
+      })
       .catch((err) => {
         response.status(500).json({error: "Something went wrong."});
         console.error(err);
@@ -66,14 +69,11 @@ exports.getOneTodo = (request, response) => {
 
 exports.deleteTodo = (request, response, functions) => {
   // eslint-disable-next-line max-len
-  const document = db.doc(`/users/${request.user.userId}/tasks/${request.params.todoId}`);
+  const document = db.doc(`/users/${request.user.uid}/tasks/${request.params.todoId}`);
   document
-      .get()
+      .delete()
       .then((doc) => {
-        if (!doc.exists) {
-          return response.status(404).json({error: "Task not found."});
-        }
-        return document.delete();
+        return response.status(200).json({general: "Done."});
       })
       .catch((err) => {
         console.error(err);

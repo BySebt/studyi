@@ -16,7 +16,6 @@ const {
 const {
   loginUser,
   signUpUser,
-  uploadProfilePhoto,
   getUserDetail,
   updateUserDetails,
 } = require("./APIs/users");
@@ -31,7 +30,6 @@ app.put("/todo/:todoId", auth, editTodo);
 // Users
 app.post("/login", loginUser);
 app.post("/signup", signUpUser);
-app.post("/user/image", auth, uploadProfilePhoto);
 app.post("/user", auth, updateUserDetails);
 app.get("/user", auth, getUserDetail);
 

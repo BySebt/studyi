@@ -6,6 +6,12 @@ const auth = require("./util/auth");
 // app.use(cors);
 
 const {
+  postRevisionOrGetStart,
+  completedTask,
+  skippedTask,
+} = require("./APIs/revision")
+
+const {
   getAllTodos,
   getOneTodo,
   postOneTodo,
@@ -19,6 +25,10 @@ const {
   getUserDetail,
   updateUserDetails,
 } = require("./APIs/users");
+
+app.post("/revision", auth, postRevisionOrGetStart);
+app.post("/revision/completed", auth, completedTask);
+app.post("/revision/skipped", auth, skippedTask);
 
 // Todos
 app.get("/todos", auth, getAllTodos);

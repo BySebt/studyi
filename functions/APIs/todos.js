@@ -11,7 +11,7 @@ exports.getAllTodos = (request, response, functions) => {
           todos.push({
             todoId: doc.id,
             name: doc.data().name,
-            length_seconds: doc.data().length_seconds,
+            time_required: doc.data().time_required,
             description: doc.data().description,
             date_created: doc.data().date_created,
             next_due_date: doc.data().next_due_date,

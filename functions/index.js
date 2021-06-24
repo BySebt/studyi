@@ -6,17 +6,17 @@ const auth = require("./util/auth");
 // app.use(cors);
 
 const {
-  postRevisionOrGetStart,
+  createNewRevision,
   completedTask,
-  skippedTask,
-} = require("./APIs/revision")
+  getPendingRevision,
+} = require("./APIs/revision");
 
 const {
   getAllTodos,
   getOneTodo,
   postOneTodo,
   deleteTodo,
-  editTodo,
+  updateTask,
 } = require("./APIs/todos");
 
 const {
@@ -26,22 +26,23 @@ const {
   updateUserDetails,
 } = require("./APIs/users");
 
-app.post("/revision", auth, postRevisionOrGetStart);
-app.post("/revision/completed", auth, completedTask);
-app.post("/revision/skipped", auth, skippedTask);
+app.get("/revision", auth, getPendingRevision);
+app.post("/revision/new", auth, createNewRevision);
+app.post("/revision/completed", auth, updateTask, completedTask);
 
 // Todos
 app.get("/todos", auth, getAllTodos);
 app.get("/todo/:todoId", auth, getOneTodo);
 app.post("/todo", auth, postOneTodo);
 app.delete("/todo/:todoId", auth, deleteTodo);
-app.put("/todo/:todoId", auth, editTodo);
 
 // Users
 app.post("/login", loginUser);
 app.post("/signup", signUpUser);
 app.post("/user", auth, updateUserDetails);
 app.get("/user", auth, getUserDetail);
+
+app.get("/token", auth);
 
 // eslint-disable-next-line max-len
 exports.api = functions.region("australia-southeast1").runWith({timeoutSeconds: 15, memory: "128MB"}).https.onRequest(app);

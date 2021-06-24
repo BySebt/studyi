@@ -81,19 +81,30 @@ exports.deleteTodo = (request, response, functions) => {
       });
 };
 
-exports.editTodo = ( request, response, functions ) => {
-  if (request.body.todoId || request.body.createdAt) {
-    response.status(403).json({message: "Not allowed to edit"});
-  }
-  const document = db.collection("todos").doc(`${request.params.todoId}`);
-  document.update(request.body)
-      .then(()=> {
-        response.json({message: "Updated successfully"});
-      })
-      .catch((err) => {
-        console.error(err);
-        return response.status(500).json({
-          error: err.code,
-        });
+exports.updateTask = ( request, response, next ) => {
+  // eslint-disable-next-line max-len
+  const document = db.doc(`/users/${request.user.uid}/tasks/${request.body.todoId}`);
+
+  switch (request.body.status) {
+    case "FIRST_REVISION":
+      document.update({
+        next_due_date: Date.now() + 1.728e+8,
+        status: "SECOND_REVISION",
+      }).then((r) => {
+        next();
       });
+      break;
+    case "SECOND_REVISION":
+      document.update({
+        next_due_date: Date.now() + 2.592e+8,
+        status: "THIRD_REVISION",
+      }).then((r) => {
+        next();
+      });
+      break;
+    case "THIRD_REVISION":
+      document.delete().then((r) => {
+        next();
+      });
+  }
 };

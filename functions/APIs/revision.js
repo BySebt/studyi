@@ -1,109 +1,116 @@
-const {db} = require("../util/admin");
+const {
+    db,
+} = require("../util/admin");
 
-exports.postRevisionOrGetStart = (request, response, functions) => {
-  db
-      .collection(`/users/${request.user.uid}/revision`)
-      .get()
-      .then((data) => {
-        let unfinishedTask = [];
-        data.forEach((doc) => {
-          if (!doc.data().finished) {
-            unfinishedTask = doc;
-          }
-        });
+exports.getPendingRevision = (request, response) => {
+    db
+        .collection(`/users/${request.user.uid}/revision`)
+        // Filter for revisions that are not finished
+        .where("finished", "==", false)
+        .get()
+        .then((r) => {
 
-        // There are no unfinished revisions - create new session
-        if (unfinishedTask.length === 0) {
-          const newRevision = {
-            revision_tasks: request.body.revision_tasks,
-            start_time: request.body.start_time,
-            total_tasks: request.body.revision_tasks.length,
-            time_left_seconds: request.body.time_left_seconds,
+            // If the response is empty, there are no pending tasks.
+            if (r.empty) {
+                return response.json({
+                    status: "NO_PENDING_TASK",
+                });
+            }
+
+            // If there is an unfinished task...
+            r.forEach((doc) => {
+                const revisionDoc = doc.data();
+                let total_tasks = revisionDoc.revision_tasks.length;
+                for (let i = 0; i < total_tasks; i++) {
+                    db.doc(`/users/${request.user.uid}/tasks/${revisionDoc.revision_tasks[i].id}`)
+                        .get()
+                        .then((task) => {
+                            Object.assign(revisionDoc.revision_tasks[i], task.data());
+                            if(i === (total_tasks - 1)){
+                                return response.json({revisionDoc});
+                            }
+                        });
+                }
+            })
+        })
+};
+
+exports.createNewRevision = (request, response) => {
+    const revisionTaskArray = [];
+
+    request.body.revision_tasks.forEach((item) => {
+        revisionTaskArray.push({
+            id: item.todoId,
             finished: false,
-            task_completed: 0,
-            task_left: request.body.revision_tasks.length,
-            task_skipped: 0,
-          };
+            skipped: false,
+        });
+    });
 
-          db
-              .collection(`/users/${request.user.uid}/revision`)
-              .add(newRevision)
-              .then((r)=>{
-                return response.json(r.id);
-              });
-        }
+    const newRevision = {
+        revision_tasks: revisionTaskArray,
+        start_time: request.body.start_time,
+        total_tasks: request.body.revision_tasks.length,
+        time_left: request.body.time_left,
+        finished: false,
+        tasks_completed: 0,
+        tasks_left: request.body.revision_tasks.length,
+        tasks_skipped: 0,
+    };
 
-        // There is a unfinished revision
-        return response.json(unfinishedTask[0]);
-      })
-      .catch((err) => {
+    db
+        .collection(`/users/${request.user.uid}/revision`)
+        .add(newRevision)
+        .then((r) => {
+            return response.json(r.id);
+        }).catch((err) => {
         console.error(err);
-        return response.status(500).json({error: err.code});
-      });
+        return response.status(500).json({
+            error: err.code,
+        });
+    });
 };
 
-exports.completedTask = (request, response, functions) => {
-  // eslint-disable-next-line max-len
-  const collection = db.collection(`/users/${request.user.uid}/revision/${request.body.revision_id}`);
+exports.completedTask = (request, response) => {
+    // eslint-disable-next-line max-len
+    const collection = db.collection(`/users/${request.user.uid}/revision/`);
+    const doc = collection.doc(`${request.body.revision_id}`);
+    const data = doc.data();
+    let i = 0;
 
-  // Get the collection of the tasks and set it to completed
-  collection.doc(`/revision_tasks/${request.body.task_id}`).update({
-    completed: true,
-  });
+    const updateData = [];
 
-  // Update variables of the revision document
-  collection.doc().update({
-    task_completed: collection.doc().task_completed + 1,
-    task_left: collection.doc().task_left - 1,
-    time_left_seconds: request.body.time_left_seconds,
-  })
-      .then((updateVariableResponse)=>{
-        // After updating the main variables, check if the task is finished.
-        if (collection.doc().task_left === 0) {
-          collection.doc().update({
-            finished: true,
-            finished_time: Date.now(),
-          }).then((finishTaskResponse) => {
-            return response.json(finishTaskResponse);
-          });
+    const revisionTasks = data.revision_tasks;
+
+    for (i; i < revisionTasks.length; i++) {
+        if (revisionTasks[i].id === request.body.task_id) {
+            revisionTasks[i].finished = true;
         }
-        return response.json(updateVariableResponse);
-      })
-      .catch((err) => {
-        console.error(err);
-        return response.status(500).json({error: err.code});
-      });
-};
+    }
 
-exports.skippedTask = (request, response, functions) => {
-  // eslint-disable-next-line max-len
-  const collection = db.collection(`/users/${request.user.uid}/revision/${request.body.revision_id}`);
+    updateData.push(revisionTasks);
+    updateData.push({
+        tasks_completed: data.tasks_completed++,
+        tasks_left: data.task_left -= 1,
+        time_left_seconds: request.body.time_left_seconds,
+    });
 
-  // Get the collection of the tasks and set it to completed
-  collection.doc(`/revision_tasks/${request.body.task_id}`).update({
-    skipped: true,
-  });
-
-  // Update variables of the revision document
-  collection.doc().update({
-    task_skipped: collection.doc().task_skipped + 1,
-    task_left: collection.doc().task_left - 1,
-    time_left_seconds: request.body.time_left_seconds,
-  })
-      .then((updateVariableResponse)=>{
-        // After updating the main variables, check if the task is finished.
-        if (collection.doc().task_left === 0) {
-          collection.doc().update({
-            finished: true,
-            finished_time: Date.now(),
-          }).then((finishTaskResponse) => {
-            return response.json(finishTaskResponse);
-          });
-        }
-        return response.json(updateVariableResponse);
-      })
-      .catch((err) => {
-        console.error(err);
-        return response.status(500).json({error: err.code});
-      });
+    doc.update(updateData)
+        .then((updateVariableResponse) => {
+            // After updating the main variables, check if the task is finished.
+            if (collection.doc().task_left === 0) {
+                collection.doc().update({
+                    finished: true,
+                    finished_time: Date.now(),
+                }).then((finishTaskResponse) => {
+                    return response.json(finishTaskResponse);
+                });
+            }
+            return response.json(updateVariableResponse);
+        })
+        .catch((err) => {
+            console.error(err);
+            return response.status(500).json({
+                error: err.code,
+            });
+        });
 };

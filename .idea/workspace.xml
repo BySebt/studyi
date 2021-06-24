@@ -2,10 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="17c49f7a-0b89-4769-977f-20446bbcbbdc" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/functions/APIs/revision.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/functions/APIs/revision.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/APIs/revision.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/functions/APIs/todos.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/APIs/todos.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/functions/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/functions/util/auth.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/util/auth.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,11 +35,15 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.standard" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.standard" value="project" />
     <property name="node.js.path.for.package.tslint" value="project" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.standard" value="" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="nodejs_package_manager_path" value="npm" />
     <property name="vue.rearranger.settings.migration" value="true" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -50,6 +56,14 @@
       <updated>1622600442880</updated>
       <workItem from="1622600444120" duration="1333000" />
       <workItem from="1622760721959" duration="2810000" />
+      <workItem from="1622773279602" duration="3168000" />
+      <workItem from="1623023142098" duration="2902000" />
+      <workItem from="1623039495060" duration="1625000" />
+      <workItem from="1623109660808" duration="3168000" />
+      <workItem from="1623970024061" duration="3122000" />
+      <workItem from="1624415573770" duration="667000" />
+      <workItem from="1624487445004" duration="4063000" />
+      <workItem from="1624491972600" duration="2623000" />
     </task>
     <servers />
   </component>
@@ -66,5 +80,6 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
 </project>

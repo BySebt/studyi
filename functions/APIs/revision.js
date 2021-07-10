@@ -2,34 +2,55 @@ const {
     db,
 } = require("../util/admin");
 
+function l(message) {
+    console.log("[REVISION API] " + message);
+}
+
+
 exports.getPendingRevision = (request, response) => {
+
+    l("-------------------------------")
+
     db
         .collection(`/users/${request.user.uid}/revision`)
         // Filter for revisions that are not finished
         .where("finished", "==", false)
         .get()
-        .then((r) => {
+        .then((r) =>  {
 
             // If the response is empty, there are no pending tasks.
             if (r.empty) {
                 return response.json({
-                    status: "NO_PENDING_TASK",
+                    status: "NO_PENDING_REVISION",
                 });
             }
 
             // If there is an unfinished task...
-            r.forEach((doc) => {
+            r.forEach(async (doc) => {
                 const revisionDoc = doc.data();
                 let total_tasks = revisionDoc.revision_tasks.length;
+
+                // Loop through all tasks and append the data
                 for (let i = 0; i < total_tasks; i++) {
-                    db.doc(`/users/${request.user.uid}/tasks/${revisionDoc.revision_tasks[i].id}`)
-                        .get()
-                        .then((task) => {
-                            Object.assign(revisionDoc.revision_tasks[i], task.data());
-                            if(i === (total_tasks - 1)){
-                                return response.json({revisionDoc});
-                            }
-                        });
+
+                    // The use of a promise here ensures the for loop only contiunes after one finishes
+                    await new Promise(next => {
+                        db.doc(`/users/${request.user.uid}/tasks/${revisionDoc.revision_tasks[i].id}`)
+                            .get()
+                            .then((task) => {
+                                // Append the task data to the return array
+                                Object.assign(revisionDoc.revision_tasks[i], task.data());
+
+                                // If this is the last iteration
+                                if (i + 1 === total_tasks) {
+                                    // Return the reponse as it is finished
+                                    return response.json({revisionDoc});
+                                }
+
+                                // If it is not finished, call the next iteration
+                                next();
+                            })
+                    })
                 }
             })
         })

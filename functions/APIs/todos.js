@@ -26,7 +26,38 @@ exports.getAllTodos = (request, response, functions) => {
       });
 };
 
-exports.postOneTodo = (request, response, functions) => {
+exports.getTodosDue = (request, response, functions) => {
+    db
+        .collection(`/users/${request.user.uid}/tasks`)
+        .where("next_due_date", "<", Date.now())
+        .get()
+        .then((data) => {
+            // can be more efficient
+            const todos = [];
+            data.forEach((doc) => {
+                todos.push({
+                    todoId: doc.id,
+                    name: doc.data().name,
+                    time_required: doc.data().time_required,
+                    description: doc.data().description,
+                    date_created: doc.data().date_created,
+                    next_due_date: doc.data().next_due_date,
+                    status: doc.data().status,
+                });
+            });
+            return response.json(todos);
+        })
+        .catch((err) => {
+            console.error(err);
+            return response.status(500).json({error: err.code});
+        });
+};
+
+exports.postOneTodo = (request, response, next) => {
+
+    request.finished_task = false;
+    request.new_task = true;
+
   const newTodoItem = {
     name: request.body.name,
     description: request.body.description,
@@ -38,10 +69,9 @@ exports.postOneTodo = (request, response, functions) => {
   db
       .collection(`/users/${request.user.uid}/tasks`)
       .add(newTodoItem)
-      .then((doc)=>{
-        const responseTodoItem = newTodoItem;
-        responseTodoItem.id = doc.id;
-        return response.json(responseTodoItem);
+      .then(()=>{
+          return next();
+        // return response.json(responseTodoItem);
       })
       .catch((err) => {
         response.status(500).json({error: "Something went wrong."});
@@ -82,16 +112,22 @@ exports.deleteTodo = (request, response, functions) => {
 };
 
 exports.updateTask = ( request, response, next ) => {
-  // eslint-disable-next-line max-len
-  const document = db.doc(`/users/${request.user.uid}/tasks/${request.body.todoId}`);
 
-  switch (request.body.status) {
+    request.finished_task = true;
+    request.new_task = false;
+
+  // eslint-disable-next-line max-len
+  const document = db.doc(`/users/${request.user.uid}/tasks/${request.body.finished_task_id}`);
+
+  console.log("Updating tasks")
+
+  switch (request.body.finished_task_status) {
     case "FIRST_REVISION":
       document.update({
         next_due_date: Date.now() + 1.728e+8,
         status: "SECOND_REVISION",
       }).then((r) => {
-        next();
+          next();
       });
       break;
     case "SECOND_REVISION":
@@ -99,12 +135,12 @@ exports.updateTask = ( request, response, next ) => {
         next_due_date: Date.now() + 2.592e+8,
         status: "THIRD_REVISION",
       }).then((r) => {
-        next();
+          next();
       });
       break;
     case "THIRD_REVISION":
       document.delete().then((r) => {
-        next();
+          next();
       });
   }
 };

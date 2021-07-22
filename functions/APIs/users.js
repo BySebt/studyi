@@ -5,6 +5,31 @@ const firebase = require("firebase");
 
 firebase.initializeApp(config);
 
+exports.deleteUser = ( request, response) => {
+
+    db.doc(`/users/${request.params.userID}`).delete()
+        .then((r) => {
+            admin
+                .auth()
+                .deleteUser(`${request.params.userID}`)
+                .then(() => {
+                    // See the UserRecord reference doc for the contents of userRecord.
+                    console.log(`Successfully deleted user.`);
+                    return response.status(201).json("DELETED_USER");
+                })
+                .catch((error) => {
+                    console.log('Error deleting user:', error);
+                    return response.status(500).json(error);
+                });
+        })
+        .catch((error) => {
+            console.log('Error deleting user documents:', error);
+            return response.status(500).json(error);
+        })
+
+
+}
+
 // Login
 exports.loginUser = (request, response) => {
   const user = {
@@ -12,27 +37,29 @@ exports.loginUser = (request, response) => {
     password: request.body.password,
   };
 
+  let userID = "";
+
   firebase
       .auth()
       .signInWithEmailAndPassword(user.email, user.password)
       .then((data) => {
-        return data.user.getIdToken();
+          userID = data.user.uid;
+          return data.user.getIdToken();
       })
       .then((token) => {
-        return response.json({token});
+          return response.status(201).json({
+              token: token,
+              userID: userID,
+          })
       })
       .catch((error) => {
         console.error(error);
-        return response.status(403).json(
-            {
-              error: "WRONG_CREDENTIALS",
-            }
-        );
+        return response.status(403).json({error: "WRONG_CREDENTIALS"});
       });
 };
 
 // Sign up
-exports.signUpUser = (request, response) => {
+exports.signUpUser = (request, response, next) => {
   const newUser = {
     name: request.body.name,
     email: request.body.email,
@@ -40,7 +67,8 @@ exports.signUpUser = (request, response) => {
   };
 
   let token; let userId;
-  db.doc(`/users/${newUser.email}`).get()
+  db.doc(`/users/${newUser.email}`)
+      .get()
       .then((doc) => {
         if (doc.exists) {
           return response.status(400).json({error: "EMAIL_TAKEN"});
@@ -50,17 +78,13 @@ exports.signUpUser = (request, response) => {
               .createUserWithEmailAndPassword(
                   newUser.email,
                   newUser.password
-              );
+              )
         }
       })
       .then((data) => {
         userId = data.user.uid;
-        const userData = [];
-        userData.push({
-          token: data.user.getIdToken(),
-          id: data.user.uid,
-        });
-        return userData;
+        // ID Token is returns a promise, hence must wait for then chain
+        return data.user.getIdToken();
       })
       .then((idtoken) => {
         token = idtoken;
@@ -71,10 +95,21 @@ exports.signUpUser = (request, response) => {
           signup_date: currentDate.getTime(),
           userId,
         };
+
+        // Add user details (Not sure of this is useful)
         return db.doc(`/users/${userId}`).set(userCredentials);
       })
       .then(()=>{
-        return response.status(201).json({token});
+          // Attach the user id and token to the request, then pass onto weekly data initalisation
+          request.userID = userId;
+          request.token = token;
+
+          // return response.status(201).json({
+          //     token: token,
+          //     userID: userId,
+          // })
+
+          return next();
       })
       .catch((err) => {
         console.error(err);

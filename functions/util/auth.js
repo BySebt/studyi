@@ -10,6 +10,7 @@ module.exports = (request, response, next) => {
       err: "NO_TOKEN",
     });
   }
+
   admin
       .auth()
       .verifyIdToken(idToken)

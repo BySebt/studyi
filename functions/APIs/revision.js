@@ -8,16 +8,12 @@ function l(message) {
 
 
 exports.getPendingRevision = (request, response) => {
-
-    l("-------------------------------")
-
     db
         .collection(`/users/${request.user.uid}/revision`)
         // Filter for revisions that are not finished
         .where("finished", "==", false)
         .get()
         .then((r) =>  {
-
             // If the response is empty, there are no pending tasks.
             if (r.empty) {
                 return response.json({
@@ -30,6 +26,8 @@ exports.getPendingRevision = (request, response) => {
                 const revisionDoc = doc.data();
                 let total_tasks = revisionDoc.revision_tasks.length;
 
+                revisionDoc.id = doc.id;
+
                 // Loop through all tasks and append the data
                 for (let i = 0; i < total_tasks; i++) {
 
@@ -38,11 +36,21 @@ exports.getPendingRevision = (request, response) => {
                         db.doc(`/users/${request.user.uid}/tasks/${revisionDoc.revision_tasks[i].id}`)
                             .get()
                             .then((task) => {
-                                // Append the task data to the return array
-                                Object.assign(revisionDoc.revision_tasks[i], task.data());
+                                // If the revision task no longer exists
+                                if(!task.data()){
+                                    // Delete the revision task from the array
+                                    revisionDoc.revision_tasks.splice(i, 1);
+
+                                    // Roll back a step with the number i and total_tasks, to not run out of index.
+                                    i--;
+                                    total_tasks--;
+                                } else {
+                                    // Append the task data to the return array
+                                    Object.assign(revisionDoc.revision_tasks[i], task.data());
+                                }
 
                                 // If this is the last iteration
-                                if (i + 1 === total_tasks) {
+                                if (i === (total_tasks - 1)) {
                                     // Return the reponse as it is finished
                                     return response.json({revisionDoc});
                                 }
@@ -94,44 +102,28 @@ exports.createNewRevision = (request, response) => {
 exports.completedTask = (request, response) => {
     // eslint-disable-next-line max-len
     const collection = db.collection(`/users/${request.user.uid}/revision/`);
-    const doc = collection.doc(`${request.body.revision_id}`);
-    const data = doc.data();
-    let i = 0;
+    const doc = collection.doc(`${request.body.id}`);
 
-    const updateData = [];
+    doc.
+    get().then((r) => {
+        const updateData = {
+            finished: request.body.finished,
+            revision_tasks: request.body.revision_tasks,
+            tasks_completed: request.body.tasks_completed,
+            tasks_left: request.body.tasks_left,
+            time_left: request.body.time_left,
+        };
 
-    const revisionTasks = data.revision_tasks;
-
-    for (i; i < revisionTasks.length; i++) {
-        if (revisionTasks[i].id === request.body.task_id) {
-            revisionTasks[i].finished = true;
-        }
-    }
-
-    updateData.push(revisionTasks);
-    updateData.push({
-        tasks_completed: data.tasks_completed++,
-        tasks_left: data.task_left -= 1,
-        time_left_seconds: request.body.time_left_seconds,
-    });
-
-    doc.update(updateData)
-        .then((updateVariableResponse) => {
-            // After updating the main variables, check if the task is finished.
-            if (collection.doc().task_left === 0) {
-                collection.doc().update({
-                    finished: true,
-                    finished_time: Date.now(),
-                }).then((finishTaskResponse) => {
-                    return response.json(finishTaskResponse);
+        doc.update(updateData)
+            .then((updateVariableResponse) => {
+                return response.json(updateVariableResponse);
+            })
+            .catch((err) => {
+                console.error(err);
+                return response.status(500).json({
+                    error: err.code,
                 });
-            }
-            return response.json(updateVariableResponse);
-        })
-        .catch((err) => {
-            console.error(err);
-            return response.status(500).json({
-                error: err.code,
             });
-        });
+    })
+
 };

@@ -14,6 +14,8 @@ const {
 const {
   createNewRevision,
   completedTask,
+    getRevision,
+    deleteRevision,
   getPendingRevision,
 } = require("./APIs/revision");
 
@@ -41,6 +43,8 @@ app.post("/weekly/update", auth, updateWeeklyData);
 
 // Revision
 app.get("/revision", auth, getPendingRevision);
+app.get("/revision/:revision_id", auth, getRevision);
+app.delete("/revision/:revision_id", auth, deleteRevision);
 app.post("/revision/new", auth, createNewRevision);
 app.post("/revision/completed", auth, updateTask, completedTask);
 
@@ -48,12 +52,12 @@ app.post("/revision/completed", auth, updateTask, completedTask);
 app.get("/todos", auth, getAllTodos);
 app.get("/todos/due", auth, getTodosDue);
 app.get("/todo/:todoId", auth, getOneTodo);
-app.post("/todo", auth, postOneTodo, updateWeeklyData);
+app.post("/todo", auth, postOneTodo);
 app.delete("/todo/:todoId", auth, deleteTodo);
 
 // Users
 app.post("/login", loginUser);
-app.post("/signup", signUpUser, newUserWeeklyData);
+app.post("/signup", signUpUser);
 app.post("/user", auth, updateUserDetails);
 app.get("/user", auth, getUserDetail);
 app.delete("/user/delete/:userID", deleteUser);

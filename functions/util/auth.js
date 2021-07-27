@@ -1,13 +1,13 @@
-const {admin, db} = require("./admin");
+const {admin} = require("./admin");
 
 module.exports = (request, response, next) => {
   let idToken;
-  // eslint-disable-next-line max-len
-  if (request.headers.authorization && request.headers.authorization.startsWith("Bearer ")) {
+  if (request.headers.authorization &&
+      request.headers.authorization.startsWith("Bearer ")) {
     idToken = request.headers.authorization.split("Bearer ")[1];
   } else {
     return response.status(403).json({
-      err: "NO_TOKEN",
+      error: "NO_TOKEN",
     });
   }
 
@@ -15,17 +15,16 @@ module.exports = (request, response, next) => {
       .auth()
       .verifyIdToken(idToken)
       .then((decodedToken) => {
+        console.log(decodedToken);
+        // Attach the user object to request.user,
+        // for accessing in whatever may follow.
         request.user = decodedToken;
-        // eslint-disable-next-line max-len
-        return db.collection("users").where("userId", "==", request.user.uid).limit(1).get();
-      })
-      .then((data) => {
         return next();
       })
       .catch((err) => {
+        console.log(err);
         return response.status(403).json({
-          err: "INVALID_OR_EXPIRED_TOKEN",
-          full_error: err,
+          error: err.code,
         });
       });
 };

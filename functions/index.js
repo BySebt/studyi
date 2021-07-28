@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 const auth = require("./util/auth");
 const express = require("express");
-const path = require("path");
+// const path = require("path");
 const app = express();
 
 const {
@@ -37,11 +37,14 @@ app.delete("/todo/:todoId", auth, deleteTodo);
 
 app.get("/token", auth);
 
-app.use(express.static(path.join(__dirname, "build")));
-
-app.get("/", function(req, res) {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
-});
+// app.use(express.static(path.join(__dirname, "build")));
+//
+// app.get("/*", function(req, res) {
+//   res.sendFile(path.join(__dirname, "build", "index.html"));
+// });
 
 // eslint-disable-next-line max-len
-exports.api = functions.region("us-central1").runWith({timeoutSeconds: 15, memory: "128MB"}).https.onRequest(app);
+exports.api = functions
+    .region("us-central1")
+    .runWith({timeoutSeconds: 15, memory: "128MB"})
+    .https.onRequest(app);

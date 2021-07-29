@@ -1,8 +1,12 @@
 const functions = require("firebase-functions");
 const auth = require("./util/auth");
 const express = require("express");
-// const path = require("path");
+const cors = require("cors");
+
 const app = express();
+
+// Automatically allow cross-origin requests
+app.use(cors({origin: true}));
 
 const {
   createNewRevision,
@@ -35,16 +39,8 @@ app.get("/todo/:todoId", auth, getOneTodo);
 app.post("/todo", auth, postOneTodo);
 app.delete("/todo/:todoId", auth, deleteTodo);
 
-app.get("/token", auth);
-
-// app.use(express.static(path.join(__dirname, "build")));
-//
-// app.get("/*", function(req, res) {
-//   res.sendFile(path.join(__dirname, "build", "index.html"));
-// });
-
 // eslint-disable-next-line max-len
 exports.api = functions
-    .region("us-central1")
+    .region("australia-southeast1")
     .runWith({timeoutSeconds: 15, memory: "128MB"})
     .https.onRequest(app);

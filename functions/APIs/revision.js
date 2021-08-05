@@ -63,8 +63,13 @@ exports.getPendingRevision = (request, response) => {
 };
 
 exports.getRevision = (request, response) => {
-  db
-      .doc(`/users/${request.user.uid}/revision/${request.params.revision_id}`)
+  // db.doc("/users/xWiorzSCJUYhoytoSyJpi89nnft2/tasks/E7NSI9JYxkWEYSWrPQQA")
+  //     .get()
+  //     .then((doc) => {
+  //       console.log(doc.data());
+  //     });
+
+  db.doc(`/users/${request.user.uid}/revision/${request.params.revision_id}`)
       .get()
       .then(async (doc) => {
         // If the document does not exist.
@@ -73,6 +78,8 @@ exports.getRevision = (request, response) => {
             error: "REVISION_NOT_FOUND",
           });
         }
+
+        console.log(doc.data());
 
         const revisionDoc = doc.data();
         let totalTasks = revisionDoc.revision_tasks.length;
@@ -84,10 +91,15 @@ exports.getRevision = (request, response) => {
           // The use of a promise here ensures
           // the for loop only contiunes after one finishes
           await new Promise((next) => {
-            db.doc(`/users/${request.user.uid}/tasks/
-            ${revisionDoc.revision_tasks[i].id}`)
+            // eslint-disable-next-line max-len
+            console.log(`/users/${request.user.uid}/tasks/${revisionDoc.revision_tasks[i].id}`);
+
+            // eslint-disable-next-line max-len
+            db.doc(`/users/${request.user.uid}/tasks/${revisionDoc.revision_tasks[i].id}`)
                 .get()
                 .then((task) => {
+                  console.log(task.data());
+
                   // If the revision task no longer exists
                   if (!task.data()) {
                     // Delete the revision task from the array
@@ -101,6 +113,8 @@ exports.getRevision = (request, response) => {
                     // Append the task data to the return array
                     Object.assign(revisionDoc.revision_tasks[i], task.data());
                   }
+
+                  console.log(JSON.stringify(revisionDoc));
 
                   // If this is the last iteration
                   if (i === (totalTasks - 1)) {

@@ -1,6 +1,6 @@
 const {db} = require("../util/admin");
 
-exports.getAllTodos = (request, response, functions) => {
+exports.getAllTasks = (request, response, functions) => {
   db
       .collection(`/users/${request.user.uid}/tasks`)
       .orderBy("date_created", "desc")
@@ -14,7 +14,7 @@ exports.getAllTodos = (request, response, functions) => {
       });
 };
 
-exports.getTodosDue = (request, response, functions) => {
+exports.getDueTasks = (request, response, functions) => {
   db
       .collection(`/users/${request.user.uid}/tasks`)
       .where("next_due_date", "<", Date.now())
@@ -28,7 +28,7 @@ exports.getTodosDue = (request, response, functions) => {
       });
 };
 
-exports.postOneTodo = (request, response, next) => {
+exports.createOneTask = (request, response, next) => {
   request.finished_task = false;
   request.new_task = true;
 
@@ -57,7 +57,7 @@ exports.postOneTodo = (request, response, next) => {
       });
 };
 
-exports.getOneTodo = (request, response) => {
+exports.getOneTask = (request, response) => {
   db
       .doc(`/users/${request.user.userId}/tasks/${request.params.todoId}`)
       .get()
@@ -75,7 +75,7 @@ exports.getOneTodo = (request, response) => {
       });
 };
 
-exports.deleteTodo = (request, response, functions) => {
+exports.deleteOneTask = (request, response, functions) => {
   // eslint-disable-next-line max-len
   const document = db.doc(`/users/${request.user.uid}/tasks/${request.params.todoId}`);
   document
@@ -89,7 +89,45 @@ exports.deleteTodo = (request, response, functions) => {
       });
 };
 
-exports.updateTask = (request, response, next) => {
+exports.taskAddRevisionDueDate = (request, response) => {
+  // Add the due date to tasks
+  const revision = request.created_revision;
+
+  const forEachPromise = new Promise((resolve, reject) => {
+    // For each task in the current revision
+    revision.revision_tasks.forEach((task, index, array) => {
+      // Obtain the document of the task
+      const document = db.doc(`/users/${request.user.uid}/tasks/${task.id}`);
+      document
+          .get()
+          .then((doc) => {
+            console.log(doc.data().status);
+
+            // If there is no due date (i.e first time revising)
+            if (doc.data()[doc.data().status] == null) {
+              document
+              // Set the current task status's due date
+              // to when the revision was started.
+                  .set({
+                    [doc.data().status]: {
+                      // The task is set to be due when
+                      // the revision was started.
+                      due_date: revision.start_time,
+                    },
+                  }, {merge: true});
+            }
+          });
+
+      if (index === array.length - 1) resolve();
+    });
+  });
+
+  forEachPromise.then(() => {
+    return response.json(request.created_revision.id);
+  });
+};
+
+exports.taskSetFinishedDate = (request, response, next) => {
   request.finished_task = true;
   request.new_task = false;
 
@@ -97,27 +135,20 @@ exports.updateTask = (request, response, next) => {
   const document = db
       .doc(`/users/${request.user.uid}/tasks/${request.body.finished_task_id}`);
 
+  console.log(request.body.start_time);
+
+  // If the task already has a finished date, don't overwrite
   document
       .get()
       .then((doc) => {
-        console.log(doc.data());
-        return {
-          last_due_date: doc.data().next_due_date,
-          last_task_status: doc.data().status,
-        };
-      })
-      .then((r) => {
-        const update = getTaskUpdateDocument(
-            r.last_task_status, r.last_due_date);
-        return update;
-      })
-      .then((r) => {
+        const r = getTaskUpdateDocument(
+            doc.data().status, doc.data().next_due_date);
+
         document.set({
           next_due_date: r.next_due_date,
-          status: r.status,
+          status: r.next_status,
           [r.last_task_status]: {
             finished_ms: Date.now(),
-            due_date: r.last_due_date,
           },
         }, {merge: true})
             .then(() => {
@@ -128,13 +159,10 @@ exports.updateTask = (request, response, next) => {
 
 // eslint-disable-next-line camelcase,require-jsdoc
 function getTaskUpdateDocument(last_task_status, last_due_date) {
-  console.log(last_task_status);
-  console.log(last_due_date);
-
   // eslint-disable-next-line camelcase
   const task_update_doc = {
     next_due_date: -1,
-    status: "",
+    next_status: "",
     last_task_status: last_task_status,
     last_due_date: last_due_date,
   };
@@ -143,15 +171,15 @@ function getTaskUpdateDocument(last_task_status, last_due_date) {
   switch (last_task_status) {
     case "FIRST_REVISION":
       task_update_doc.next_due_date = Date.now() + 1.728e+8;
-      task_update_doc.status = "SECOND_REVISION";
+      task_update_doc.next_status = "SECOND_REVISION";
       break;
     case "SECOND_REVISION":
       task_update_doc.next_due_date = Date.now() + 2.592e+8;
-      task_update_doc.status = "SECOND_REVISION";
+      task_update_doc.next_status = "SECOND_REVISION";
       break;
     case "THIRD_REVISION":
       task_update_doc.next_due_date = -1;
-      task_update_doc.status = "FINISHED";
+      task_update_doc.next_status = "FINISHED";
       break;
     case "FINISHED":
       return;

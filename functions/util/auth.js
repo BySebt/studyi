@@ -1,5 +1,6 @@
 const {admin} = require("./admin");
 
+// This is the middleware that handles authentication requests
 module.exports = (request, response, next) => {
   let idToken;
   if (request.headers.authorization &&

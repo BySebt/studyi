@@ -63,12 +63,6 @@ exports.getPendingRevision = (request, response) => {
 };
 
 exports.getRevision = (request, response) => {
-  // db.doc("/users/xWiorzSCJUYhoytoSyJpi89nnft2/tasks/E7NSI9JYxkWEYSWrPQQA")
-  //     .get()
-  //     .then((doc) => {
-  //       console.log(doc.data());
-  //     });
-
   db.doc(`/users/${request.user.uid}/revision/${request.params.revision_id}`)
       .get()
       .then(async (doc) => {
@@ -130,8 +124,7 @@ exports.getRevision = (request, response) => {
       });
 };
 
-
-exports.createNewRevision = (request, response) => {
+exports.createNewRevision = (request, response, next) => {
   const revisionTaskArray = [];
 
   request.body.revision_tasks.forEach((item) => {
@@ -151,11 +144,14 @@ exports.createNewRevision = (request, response) => {
     tasks_left: request.body.revision_tasks.length,
   };
 
+  request.created_revision = newRevision;
+
   db
       .collection(`/users/${request.user.uid}/revision`)
       .add(newRevision)
       .then((r) => {
-        return response.json(r.id);
+        request.created_revision.id = r.id;
+        return next();
       }).catch((err) => {
         console.error(err);
         return response.status(500).json({

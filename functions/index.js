@@ -17,27 +17,28 @@ const {
 } = require("./APIs/revision");
 
 const {
-  getAllTodos,
-  getOneTodo,
-  getTodosDue,
-  postOneTodo,
-  deleteTodo,
-  updateTask,
+  getAllTasks,
+  getOneTask,
+  getDueTasks,
+  createOneTask,
+  deleteOneTask,
+  taskSetFinishedDate,
+  taskAddRevisionDueDate,
 } = require("./APIs/tasks");
 
 // Revision
 app.get("/revision", auth, getPendingRevision);
 app.get("/revision/:revision_id", auth, getRevision);
 app.delete("/revision/:revision_id", auth, deleteRevision);
-app.post("/revision/new", auth, createNewRevision);
-app.post("/revision/completed", auth, updateTask, completedTask);
+app.post("/revision/new", auth, createNewRevision, taskAddRevisionDueDate);
+app.post("/revision/completed", auth, taskSetFinishedDate, completedTask);
 
 // Todos
-app.get("/todos", auth, getAllTodos);
-app.get("/todos/due", auth, getTodosDue);
-app.get("/todo/:todoId", auth, getOneTodo);
-app.post("/todo", auth, postOneTodo);
-app.delete("/todo/:todoId", auth, deleteTodo);
+app.get("/todos", auth, getAllTasks);
+app.get("/todos/due", auth, getDueTasks);
+app.get("/todo/:todoId", auth, getOneTask);
+app.post("/todo", auth, createOneTask);
+app.delete("/todo/:todoId", auth, deleteOneTask);
 
 // eslint-disable-next-line max-len
 exports.api = functions
